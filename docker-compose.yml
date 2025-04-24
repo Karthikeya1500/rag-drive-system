@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  rag-api:
+    build: .
+    container_name: rag-drive-system
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./downloads:/app/downloads        # persisted downloaded files
+      - ./data:/app/data                  # persisted FAISS index + chunks
+      - ./credentials.json:/app/credentials.json  # service account (never baked in)
+      - ./.env:/app/.env                  # environment variables
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - API_KEY=${API_KEY:-}              # optional: set to enable auth
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+      - WORKERS=${WORKERS:-2}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s

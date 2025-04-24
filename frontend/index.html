@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>DocuMind AI - Premium Document Intelligence</title>
+  <meta name="description" content="Enterprise-grade AI document intelligence powered by RAG. Ask questions about your documents instantly."/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-secondary-container": "#606365", "surface-dim": "#d4dae7",
+            "surface-variant": "#dce3f0", "inverse-primary": "#b6c4ff",
+            "error": "#ba1a1a", "on-tertiary-fixed-variant": "#2f2ebe",
+            "tertiary-fixed": "#e1e0ff", "on-surface-variant": "#444651",
+            "on-primary-fixed": "#00164e", "primary-fixed-dim": "#b6c4ff",
+            "background": "#f8f9ff", "primary-fixed": "#dce1ff",
+            "tertiary-fixed-dim": "#c0c1ff", "on-tertiary-container": "#a1a4ff",
+            "on-secondary-fixed-variant": "#444749", "secondary-container": "#dee0e2",
+            "primary-container": "#1e3a8a", "on-error": "#ffffff",
+            "surface-container-highest": "#dce3f0", "outline-variant": "#c5c5d3",
+            "surface-container-lowest": "#ffffff", "primary": "#00236f",
+            "on-tertiary": "#ffffff", "on-primary": "#ffffff",
+            "inverse-on-surface": "#eaf1fe", "surface-container-low": "#eef4ff",
+            "on-tertiary-fixed": "#07006c", "on-primary-container": "#90a8ff",
+            "on-error-container": "#93000a", "surface-tint": "#4059aa",
+            "secondary-fixed-dim": "#c5c6c8", "secondary-fixed": "#e1e2e4",
+            "on-primary-fixed-variant": "#264191", "on-surface": "#151c25",
+            "error-container": "#ffdad6", "tertiary": "#0d0097",
+            "on-secondary": "#ffffff", "tertiary-container": "#2724b8",
+            "secondary": "#5c5f60", "on-secondary-fixed": "#191c1e",
+            "on-background": "#151c25", "surface-container-high": "#e2e8f5",
+            "outline": "#757682", "inverse-surface": "#2a313b",
+            "surface-bright": "#f8f9ff", "surface": "#f8f9ff",
+            "surface-container": "#e7eefb"
+          },
+          borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", "2xl": "1rem", "3xl": "1.5rem", full: "9999px" },
+          fontFamily: { sans: ["Inter", "sans-serif"] },
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .glass-panel { background: rgba(255,255,255,0.75); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+    .user-bubble { background: linear-gradient(135deg,#2563EB 0%,#1D4ED8 100%); box-shadow: 0 4px 18px rgba(37,99,235,0.25); }
+    .input-glow:focus-within { box-shadow: 0 0 0 3px rgba(37,99,235,0.15), 0 6px 24px rgba(0,0,0,0.07); }
+    .message-entrance { animation: slideUpFade 0.35s ease-out forwards; }
+    @keyframes slideUpFade { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    .typing-dot { animation: blink 1.4s infinite; }
+    @keyframes blink { 0%,100%{opacity:.25;transform:scale(.85)} 50%{opacity:1;transform:scale(1)} }
+    #chat-messages::-webkit-scrollbar { width:6px }
+    #chat-messages::-webkit-scrollbar-thumb { background:#c5c5d3; border-radius:99px }
+    .source-chip:hover { transform:translateY(-1px); }
+    .action-btn { opacity:0; transition:opacity .2s; }
+    .bot-msg-wrapper:hover .action-btn { opacity:1; }
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg) } }
+    .filter-chip.active { background: #1e3a8a; color: #90a8ff; border-color: #1e3a8a; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-surface-container-low to-surface min-h-screen text-on-background flex flex-col">
+
+<!-- ═══ AUTH MODAL (shown only when server has API_KEY configured) ═══ -->
+<div id="auth-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center">
+  <div class="bg-white rounded-3xl p-8 shadow-2xl max-w-sm w-full mx-4">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center">
+        <span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings:'FILL' 1">lock</span>
+      </div>
+      <div>
+        <h2 class="font-bold text-on-surface text-lg">Authentication Required</h2>
+        <p class="text-[12px] text-on-surface-variant">Enter your API key to continue</p>
+      </div>
+    </div>
+    <input id="api-key-input" type="password" placeholder="Paste your API key here…"
+      class="w-full border border-outline-variant rounded-xl px-4 py-3 text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary mb-2"
+      onkeydown="if(event.key==='Enter') submitAuth()"/>
+    <p id="auth-error" class="text-[12px] text-error mb-3 hidden">Invalid API key. Please try again.</p>
+    <button onclick="submitAuth()"
+      class="w-full py-3 rounded-xl user-bubble text-white font-semibold text-[14px] hover:opacity-90 transition-opacity">
+      Unlock DocuMind AI
+    </button>
+  </div>
+</div>
+
+<!-- ═══ TOP NAV ═══ -->
+<header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200/50 flex justify-between items-center w-full px-6 py-3">
+  <div class="flex items-center gap-2.5 flex-wrap">
+    <div class="w-9 h-9 rounded-xl bg-primary-container flex items-center justify-center shadow-sm">
+      <span class="material-symbols-outlined text-on-primary-container text-xl" style="font-variation-settings:'FILL' 1">neurology</span>
+    </div>
+    <span class="text-xl font-bold tracking-tighter text-blue-900">DocuMind AI</span>
+    <span id="sync-badge" class="hidden items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ml-1"></span>
+  </div>
+  <div class="flex items-center gap-2">
+    <button id="sync-btn" onclick="syncDrive()" title="Sync Google Drive documents"
+      class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full bg-primary-container text-on-primary-container hover:bg-primary hover:text-on-primary transition-all shadow-sm">
+      <span class="material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1">cloud_sync</span>
+      <span id="sync-btn-label">Sync Drive</span>
+    </button>
+  </div>
+</header>
+
+<!-- File filter bar (hidden until synced) -->
+<div id="filter-bar" class="hidden w-full bg-white/60 backdrop-blur border-b border-slate-100 px-6 py-2 flex items-center gap-2 flex-wrap">
+  <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wide mr-1">Filter:</span>
+  <button id="filter-all" onclick="setFilter(null)"
+    class="filter-chip active px-2.5 py-0.5 rounded-full border border-outline-variant text-[11px] font-medium text-primary bg-surface-container-low transition-all">
+    All docs
+  </button>
+</div>
+
+<!-- ═══ CHAT CANVAS ═══ -->
+<main class="flex-1 overflow-y-auto px-4 py-8 flex justify-center" id="chat-scroll">
+  <div class="w-full max-w-[800px] flex flex-col gap-6" id="chat-messages">
+
+    <!-- Welcome -->
+    <div class="flex flex-col gap-2 message-entrance">
+      <div class="flex items-center gap-2 mb-1">
+        <div class="w-6 h-6 rounded-md bg-primary-container flex items-center justify-center">
+          <span class="material-symbols-outlined text-[14px] text-on-primary-container" style="font-variation-settings:'FILL' 1">smart_toy</span>
+        </div>
+        <span class="text-[12px] font-medium text-on-surface-variant">DocuMind Assistant</span>
+      </div>
+      <div class="bg-white border-l-4 border-primary rounded-3xl rounded-tl-none px-5 py-4 shadow-sm ring-1 ring-black/5 max-w-[88%]">
+        <p class="text-[16px] text-on-surface leading-relaxed">
+          Hello! I'm your <span class="font-semibold text-primary">DocuMind AI</span> assistant.
+          Click <span class="font-semibold">Sync Drive</span> to load your Google Drive documents,
+          then ask me anything about them.
+        </p>
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button onclick="quickAsk('Summarize the key findings from all documents')"
+            class="px-3 py-1.5 rounded-full border border-outline-variant bg-surface-container-low text-[12px] text-primary hover:bg-primary-container hover:text-on-primary-container transition-all flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px]">description</span>Summarize Key Findings
+          </button>
+          <button onclick="quickAsk('What are the main topics covered in the documents?')"
+            class="px-3 py-1.5 rounded-full border border-outline-variant bg-surface-container-low text-[12px] text-primary hover:bg-primary-container hover:text-on-primary-container transition-all flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px]">topic</span>Main Topics
+          </button>
+          <button onclick="quickAsk('What important formulas or definitions are mentioned?')"
+            class="px-3 py-1.5 rounded-full border border-outline-variant bg-surface-container-low text-[12px] text-primary hover:bg-primary-container hover:text-on-primary-container transition-all flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px]">functions</span>Key Formulas
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ═══ BOTTOM INPUT DOCK ═══ -->
+<footer class="w-full flex justify-center p-4 md:p-6 bg-transparent pointer-events-none sticky bottom-0">
+  <div class="w-full max-w-[800px] pointer-events-auto">
+    <div class="glass-panel input-glow rounded-3xl shadow-xl ring-1 ring-black/5 p-2 pr-3 flex items-end gap-1 transition-all duration-300">
+      <textarea id="query-input"
+        class="flex-1 bg-transparent border-none focus:ring-0 text-[16px] py-3 px-4 resize-none max-h-40 overflow-y-auto placeholder:text-outline leading-relaxed"
+        placeholder="Ask DocuMind anything about your documents…"
+        rows="1"
+        onkeydown="handleKey(event)"
+        oninput="autoResize(this)"></textarea>
+      <button id="send-btn" onclick="sendMessage()"
+        class="w-12 h-12 rounded-2xl user-bubble text-white flex items-center justify-center hover:scale-105 hover:shadow-lg transition-all duration-200 flex-shrink-0 active:scale-90">
+        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">send</span>
+      </button>
+    </div>
+    <div class="flex justify-center mt-3">
+      <p class="text-[11px] text-on-surface-variant/60 font-medium tracking-wide flex items-center gap-1 uppercase">
+        <span class="material-symbols-outlined text-[12px]" style="font-variation-settings:'FILL' 1">verified_user</span>
+        Enterprise Grade Security &amp; Privacy Enabled
+      </p>
+    </div>
+  </div>
+</footer>
+
+<button class="fixed bottom-24 right-8 w-14 h-14 bg-white text-primary rounded-full shadow-lg border border-outline-variant
+               flex items-center justify-center hover:bg-primary-container hover:text-on-primary-container
+               transition-all z-10 hidden md:flex" title="Chat history">
+  <span class="material-symbols-outlined">history</span>
+</button>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const API = '';   // same-origin
+let isSynced = false;
+let activeFilter = null;
+let pollTimer = null;
+let syncedFiles = [];
+
+// ── Auth helpers ───────────────────────────────────────────────────────────
+function getHeaders(json = false) {
+  const h = {};
+  if (json) h['Content-Type'] = 'application/json';
+  const key = sessionStorage.getItem('api_key');
+  if (key) h['X-API-Key'] = key;
+  return h;
+}
+
+async function checkAuth() {
+  try {
+    const res  = await fetch(`${API}/api/info`);
+    const data = await res.json();
+    if (data.auth_required && !sessionStorage.getItem('api_key')) {
+      showAuthModal();
+    }
+  } catch(e) { /* server not running yet */ }
+}
+
+function showAuthModal() {
+  $('auth-modal').classList.remove('hidden');
+  setTimeout(() => $('api-key-input').focus(), 100);
+}
+
+async function submitAuth() {
+  const key = $('api-key-input').value.trim();
+  if (!key) return;
+  const res = await fetch(`${API}/api/verify-key`, {
+    method: 'POST',
+    headers: { 'X-API-Key': key },
+  });
+  if (res.ok) {
+    sessionStorage.setItem('api_key', key);
+    $('auth-modal').classList.add('hidden');
+    $('auth-error').classList.add('hidden');
+    $('api-key-input').value = '';
+  } else {
+    $('auth-error').classList.remove('hidden');
+    $('api-key-input').select();
+  }
+}
+
+// Run auth check on load
+checkAuth();
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const scrollEnd = () => {
+  setTimeout(() => {
+    requestAnimationFrame(() => {
+      const s = $('chat-scroll');
+      s.scrollTo({ top: s.scrollHeight, behavior: 'smooth' });
+    });
+  }, 30);
+};
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+}
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+function setBadge(text, cls) {
+  const b = $('sync-badge');
+  b.className = `flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ml-1 ${cls}`;
+  b.textContent = text;
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function nowStr() {
+  return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
+function fileIcon(ext) {
+  return ext === 'pdf' ? 'picture_as_pdf' : ext === 'docx' ? 'description' : 'article';
+}
+
+// ── Filter bar ─────────────────────────────────────────────────────────────
+function buildFilterBar(files) {
+  const bar = $('filter-bar');
+  // Remove old file chips (keep "All docs")
+  bar.querySelectorAll('.file-chip').forEach(el => el.remove());
+
+  files.forEach(name => {
+    const btn = document.createElement('button');
+    btn.className = 'file-chip filter-chip px-2.5 py-0.5 rounded-full border border-outline-variant text-[11px] font-medium text-primary bg-surface-container-low transition-all';
+    btn.textContent = name;
+    btn.onclick = () => setFilter(name);
+    bar.appendChild(btn);
+  });
+
+  bar.classList.remove('hidden');
+  bar.classList.add('flex');
+}
+
+function setFilter(name) {
+  activeFilter = name;
+  document.querySelectorAll('.filter-chip').forEach(el => el.classList.remove('active'));
+  const target = name
+    ? Array.from(document.querySelectorAll('.file-chip')).find(el => el.textContent === name)
+    : $('filter-all');
+  if (target) target.classList.add('active');
+}
+
+// ── Message builders ───────────────────────────────────────────────────────
+function appendUser(text) {
+  const el = document.createElement('div');
+  el.className = 'flex flex-col items-end gap-2 message-entrance';
+  el.innerHTML = `
+    <div class="user-bubble text-white rounded-3xl rounded-tr-none px-5 py-4 max-w-[80%]">
+      <p class="text-[16px]">${escHtml(text)}</p>
+    </div>
+    <span class="text-[12px] text-on-surface-variant px-1">${nowStr()}</span>`;
+  $('chat-messages').appendChild(el);
+  scrollEnd();
+}
+
+function appendTyping() {
+  const el = document.createElement('div');
+  el.id = 'typing';
+  el.className = 'flex flex-col gap-2 message-entrance';
+  el.innerHTML = `
+    <div class="flex items-center gap-2 mb-1">
+      <div class="w-6 h-6 rounded-md bg-primary-container flex items-center justify-center">
+        <span class="material-symbols-outlined text-[14px] text-on-primary-container" style="font-variation-settings:'FILL' 1">smart_toy</span>
+      </div>
+      <span class="text-[12px] font-medium text-on-surface-variant">DocuMind Assistant</span>
+    </div>
+    <div class="bg-white/60 backdrop-blur rounded-2xl px-5 py-4 shadow-sm ring-1 ring-black/5 w-20 flex justify-center gap-1.5">
+      <div class="w-2 h-2 rounded-full bg-primary typing-dot"></div>
+      <div class="w-2 h-2 rounded-full bg-primary typing-dot" style="animation-delay:.2s"></div>
+      <div class="w-2 h-2 rounded-full bg-primary typing-dot" style="animation-delay:.4s"></div>
+    </div>`;
+  $('chat-messages').appendChild(el);
+  scrollEnd();
+}
+function removeTyping() { $('typing')?.remove(); }
+
+function appendBot(answer, sources, msgId) {
+  const chips = sources.map(s => {
+    const icon = fileIcon(s.file_type || 'txt');
+    const page = s.page ? `<span class="text-[11px] text-on-surface-variant/50">p.${s.page}</span>` : '';
+    return `
+      <div class="source-chip flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-low
+                  border border-outline-variant rounded-xl cursor-pointer hover:bg-white transition-all">
+        <span class="material-symbols-outlined text-[16px] text-on-secondary-container" style="font-variation-settings:'FILL' 1">${icon}</span>
+        <span class="text-[13px] font-medium">${escHtml(s.file_name)}</span>
+        ${page}
+      </div>`;
+  }).join('');
+
+  const el = document.createElement('div');
+  el.className = 'bot-msg-wrapper flex flex-col gap-2 message-entrance';
+  el.id = 'msg-' + msgId;
+  el.dataset.answer = answer;
+  el.innerHTML = `
+    <div class="flex items-center gap-2 mb-1">
+      <div class="w-6 h-6 rounded-md bg-primary-container flex items-center justify-center">
+        <span class="material-symbols-outlined text-[14px] text-on-primary-container" style="font-variation-settings:'FILL' 1">smart_toy</span>
+      </div>
+      <span class="text-[12px] font-medium text-on-surface-variant">DocuMind Assistant</span>
+    </div>
+    <div class="bg-white border-l-4 border-primary rounded-3xl rounded-tl-none px-5 py-4 shadow-sm ring-1 ring-black/5 w-full">
+      <p class="text-[16px] text-on-surface leading-relaxed whitespace-pre-wrap">${escHtml(answer)}</p>
+      ${sources.length ? `
+      <div class="pt-4 mt-4 border-t border-outline-variant">
+        <span class="text-[12px] font-medium text-on-surface-variant block mb-3">Sources from your library:</span>
+        <div class="flex flex-wrap gap-2">${chips}</div>
+      </div>` : ''}
+      <div class="flex justify-end gap-1 mt-3">
+        <button class="action-btn p-1.5 text-on-surface-variant hover:text-primary transition-colors" title="Copy"
+          onclick="copyMsg('${msgId}')">
+          <span class="material-symbols-outlined text-lg">content_copy</span>
+        </button>
+        <button class="action-btn p-1.5 text-on-surface-variant hover:text-primary transition-colors" title="Helpful">
+          <span class="material-symbols-outlined text-lg">thumb_up</span>
+        </button>
+        <button class="action-btn p-1.5 text-on-surface-variant hover:text-primary transition-colors" title="Not helpful">
+          <span class="material-symbols-outlined text-lg">thumb_down</span>
+        </button>
+      </div>
+    </div>`;
+  $('chat-messages').appendChild(el);
+  scrollEnd();
+}
+
+function appendError(text) {
+  const el = document.createElement('div');
+  el.className = 'flex flex-col gap-2 message-entrance';
+  el.innerHTML = `
+    <div class="flex items-center gap-2 mb-1">
+      <div class="w-6 h-6 rounded-md bg-red-100 flex items-center justify-center">
+        <span class="material-symbols-outlined text-[14px] text-error">error</span>
+      </div>
+      <span class="text-[12px] font-medium text-on-surface-variant">DocuMind Assistant</span>
+    </div>
+    <div class="bg-error-container border-l-4 border-error rounded-3xl rounded-tl-none px-5 py-4 shadow-sm max-w-[88%]">
+      <p class="text-[16px] text-on-error-container leading-relaxed">${escHtml(text)}</p>
+    </div>`;
+  $('chat-messages').appendChild(el);
+  scrollEnd();
+}
+
+function appendInfo(html) {
+  const el = document.createElement('div');
+  el.className = 'flex flex-col gap-2 message-entrance';
+  el.innerHTML = `
+    <div class="flex items-center gap-2 mb-1">
+      <div class="w-6 h-6 rounded-md bg-primary-container flex items-center justify-center">
+        <span class="material-symbols-outlined text-[14px] text-on-primary-container" style="font-variation-settings:'FILL' 1">smart_toy</span>
+      </div>
+      <span class="text-[12px] font-medium text-on-surface-variant">DocuMind Assistant</span>
+    </div>
+    <div class="bg-white border-l-4 border-primary rounded-3xl rounded-tl-none px-5 py-4 shadow-sm ring-1 ring-black/5 max-w-[88%]">
+      ${html}
+    </div>`;
+  $('chat-messages').appendChild(el);
+  scrollEnd();
+  return el;
+}
+
+// ── Sync Drive + status polling ────────────────────────────────────────────
+function resetSyncBtn() {
+  const btn = $('sync-btn');
+  btn.disabled = false;
+  $('sync-btn-label').textContent = 'Sync Drive';
+  btn.querySelector('.material-symbols-outlined').classList.remove('spin');
+  btn.querySelector('.material-symbols-outlined').style.fontVariationSettings = "'FILL' 1";
+}
+
+async function syncDrive() {
+  if (pollTimer) clearInterval(pollTimer);
+  const btn = $('sync-btn');
+  btn.disabled = true;
+  const icon = btn.querySelector('.material-symbols-outlined');
+  icon.classList.add('spin');
+  icon.style.fontVariationSettings = "'FILL' 0";
+  $('sync-btn-label').textContent = 'Syncing…';
+  setBadge('⏳ Starting…', 'bg-amber-100 text-amber-700');
+
+  try {
+    const res = await fetch(`${API}/sync-drive`, { method: 'POST', headers: getHeaders() });
+    if (res.status === 403) { showAuthModal(); resetSyncBtn(); return; }
+    const progressEl = appendInfo(`<p class="text-[16px] text-on-surface">Sync started in the background. Downloading &amp; indexing your documents…</p>
+      <div class="mt-3 flex items-center gap-2 text-[13px] text-on-surface-variant">
+        <span class="material-symbols-outlined text-[16px] spin text-primary">autorenew</span>
+        Processing — this may take a minute for large documents.
+      </div>`);
+    progressEl.id = 'sync-progress-msg';
+    pollSyncStatus();
+  } catch(e) {
+    setBadge('✗ Failed', 'bg-red-100 text-red-600');
+    appendError('Could not reach the server. Make sure uvicorn is running.');
+    resetSyncBtn();
+  }
+}
+
+function pollSyncStatus() {
+  pollTimer = setInterval(async () => {
+    try {
+      const res = await fetch(`${API}/sync-status`);
+      const data = await res.json();
+
+      if (data.status === 'ready') {
+        clearInterval(pollTimer);
+        isSynced = true;
+        syncedFiles = [...(data.new_files || []), ...(data.skipped_files || [])];
+        setBadge(`✓ ${data.total_files} docs`, 'bg-green-100 text-green-700');
+        buildFilterBar(syncedFiles);
+        resetSyncBtn();
+
+        // Remove the "Processing..." bubble before showing success
+        $('sync-progress-msg')?.remove();
+
+        const allFiles = syncedFiles.map(f => `<span class="font-semibold text-primary">${escHtml(f)}</span>`).join(', ');
+        appendInfo(`
+          <p class="text-[16px] text-on-surface leading-relaxed">
+            ✅ <strong>Sync complete!</strong> ${data.new_files?.length || 0} new file(s) downloaded,
+            ${data.skipped_files?.length || 0} unchanged.
+            <strong>${data.chunks}</strong> text chunks indexed and ready.
+          </p>
+          ${syncedFiles.length ? `<p class="mt-2 text-[13px] text-on-surface-variant">Documents: ${allFiles}</p>` : ''}
+          <p class="mt-3 text-[14px] text-primary font-medium">You can now ask questions! 👇</p>`);
+
+      } else if (data.status === 'error') {
+        clearInterval(pollTimer);
+        setBadge('✗ Error', 'bg-red-100 text-red-600');
+        $('sync-progress-msg')?.remove();
+        appendError(`Sync failed: ${data.message}`);
+        resetSyncBtn();
+      } else {
+        setBadge('⏳ Indexing…', 'bg-amber-100 text-amber-700');
+      }
+    } catch(e) {
+      clearInterval(pollTimer);
+      $('sync-progress-msg')?.remove();
+      resetSyncBtn();
+    }
+  }, 2000);
+}
+
+// ── Send message ───────────────────────────────────────────────────────────
+async function sendMessage() {
+  const input = $('query-input');
+  const query = input.value.trim();
+  if (!query) return;
+
+  if (!isSynced) {
+    appendError('Please click "Sync Drive" first to load your documents before asking questions.');
+    return;
+  }
+
+  input.value = '';
+  input.style.height = 'auto';
+  $('send-btn').disabled = true;
+
+  appendUser(query);
+  appendTyping();
+
+  try {
+    const res = await fetch(`${API}/ask`, {
+      method: 'POST',
+      headers: getHeaders(true),
+      body: JSON.stringify({ query, file_filter: activeFilter }),
+    });
+    if (res.status === 403) { removeTyping(); showAuthModal(); $('send-btn').disabled = false; return; }
+    const data = await res.json();
+    removeTyping();
+
+    if (data.answer) {
+      appendBot(data.answer, data.sources || [], Date.now());
+    } else {
+      appendError('Received an unexpected response from the server.');
+    }
+  } catch(e) {
+    removeTyping();
+    appendError('Could not reach the DocuMind server. Please check it is running.');
+  } finally {
+    $('send-btn').disabled = false;
+    input.focus();
+  }
+}
+
+function quickAsk(text) {
+  if (!isSynced) {
+    appendError('Please sync your documents first before asking questions.');
+    return;
+  }
+  $('query-input').value = text;
+  sendMessage();
+}
+
+function copyMsg(id) {
+  const el = $('msg-' + id);
+  if (el) navigator.clipboard.writeText(el.dataset.answer);
+}
+</script>
+</body>
+</html>
