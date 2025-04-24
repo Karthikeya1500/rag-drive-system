@@ -1,0 +1,26 @@
+# API
+fastapi
+uvicorn[standard]
+gunicorn
+python-multipart
+aiofiles
+
+# Environment
+python-dotenv
+
+# Google Drive
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+
+# Document parsing
+pypdf
+python-docx
+
+# Embeddings & Vector Search
+sentence-transformers
+faiss-cpu
+numpy
+
+# LLM
+groq
