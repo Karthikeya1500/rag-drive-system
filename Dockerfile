@@ -1,10 +1,11 @@
 # ── Base image ────────────────────────────────────────────────────────────────
 FROM python:3.12-slim
 
-# System deps required by faiss-cpu and sentence-transformers
+# System deps for faiss-cpu and sentence-transformers
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
         libgomp1 \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -13,25 +14,17 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# ── Pre-download the embedding model ─────────────────────────────────────────
-# This bakes the model into the image so cold starts are instant.
+# ── Pre-download embedding model (baked into image = instant cold start) ──────
 ARG EMBEDDING_MODEL=all-MiniLM-L6-v2
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('${EMBEDDING_MODEL}')"
 
 # ── Copy application source ───────────────────────────────────────────────────
 COPY . .
 
-# Ensure persistent storage directories exist
-RUN mkdir -p downloads data
+# ── Ensure storage directories and executable startup script ─────────────────
+RUN mkdir -p downloads data && chmod +x startup.sh
 
 EXPOSE 8000
 
-# ── Production server: gunicorn + uvicorn workers ────────────────────────────
-# WORKERS env var controls parallelism (default 2; set higher on multi-core hosts)
-CMD ["sh", "-c", "gunicorn main:app \
-      -k uvicorn.workers.UvicornWorker \
-      -w ${WORKERS:-2} \
-      --bind 0.0.0.0:8000 \
-      --timeout 120 \
-      --access-logfile - \
-      --error-logfile -"]
+# Use startup.sh so credentials can be injected via env var on cloud platforms
+CMD ["./startup.sh"]

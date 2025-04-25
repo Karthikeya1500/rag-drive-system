@@ -1,0 +1,34 @@
+# render.yaml — Deploy DocuMind AI to Render with one click
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: rag-drive-system
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # Free plan — upgrade to Starter ($7/mo) for persistent disk + no sleep
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      # ── Required ────────────────────────────────────────────────────────────
+      - key: GROQ_API_KEY
+        sync: false          # Set manually in Render dashboard
+
+      # Base64-encoded contents of credentials.json
+      # Run: base64 -i credentials.json | tr -d '\n'
+      # Then paste the output as this env var in the Render dashboard
+      - key: GOOGLE_CREDENTIALS_JSON
+        sync: false
+
+      # ── Optional ────────────────────────────────────────────────────────────
+      - key: WORKERS
+        value: "1"           # Keep at 1 on free tier (512MB RAM)
+
+      # Set to your Render URL after first deploy to lock down CORS
+      # - key: ALLOWED_ORIGINS
+      #   value: https://rag-drive-system.onrender.com
+
+      # Uncomment to enable API key authentication
+      # - key: API_KEY
+      #   sync: false
