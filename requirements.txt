@@ -17,10 +17,5 @@ google-auth-oauthlib
 pypdf
 python-docx
 
-# Embeddings & Vector Search
-sentence-transformers
-faiss-cpu
-numpy
-
 # LLM
 groq
