@@ -36,7 +36,7 @@ def create_embeddings(chunks: list[dict], model: SentenceTransformer | None = No
         model = get_model()
     texts = [c["text"] for c in chunks]
     logger.info("Encoding %d chunks…", len(texts))
-    embeddings = model.encode(texts, batch_size=32, show_progress_bar=True)
+    embeddings = model.encode(texts, batch_size=8, show_progress_bar=True)
     return np.array(embeddings, dtype=np.float32)
 
 

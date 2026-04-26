@@ -7,6 +7,12 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 import os
+
+# Limit PyTorch / BLAS threads to prevent deadlocks & GIL starvation on 1 CPU
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+
 import logging
 from contextlib import asynccontextmanager
 from typing import Optional
