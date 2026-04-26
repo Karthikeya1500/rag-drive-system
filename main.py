@@ -14,10 +14,12 @@ os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
 import logging
+import threading
+import urllib.request
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, BackgroundTasks, HTTPException, Security, Depends
+from fastapi import FastAPI, HTTPException, Security, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import APIKeyHeader
@@ -52,6 +54,21 @@ sync_status: dict = {
 }
 
 
+# ── Keep-alive: self-ping every 10 min to prevent Render cold starts ──────────
+def _keep_alive():
+    """Pings /health every 10 minutes so Render free tier never sleeps."""
+    import time
+    time.sleep(60)  # wait 1 min after boot before first ping
+    while True:
+        try:
+            port = os.environ.get("PORT", "8000")
+            urllib.request.urlopen(f"http://localhost:{port}/health", timeout=10)
+            logger.debug("Keep-alive ping sent.")
+        except Exception:
+            pass
+        time.sleep(600)  # 10 minutes
+
+
 # ── Startup: load persisted index ─────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -74,6 +91,9 @@ async def lifespan(app: FastAPI):
         logger.info("Startup: loaded %d chunks from persisted index.", len(chunks_data))
     else:
         logger.info("Startup: no persisted index found. Call /sync-drive.")
+    # Start keep-alive background thread
+    t = threading.Thread(target=_keep_alive, daemon=True)
+    t.start()
     yield
     logger.info("Shutdown: application stopped.")
 
@@ -118,42 +138,48 @@ class AskResponse(BaseModel):
     sources: list[dict]
 
 
-# ── Background sync pipeline ──────────────────────────────────────────────────
+# ── Background sync pipeline (runs in a real daemon thread) ──────────────────
+_sync_lock = threading.Lock()
+
+
 def run_sync() -> None:
     global chunks_data, faiss_index, sync_status
 
-    try:
-        sync_status = {**sync_status, "status": "syncing",
-                       "message": "Connecting to Google Drive…"}
-        logger.info("Sync started.")
+    with _sync_lock:
+        try:
+            sync_status = {**sync_status, "status": "syncing",
+                           "message": "Step 1/4 — Connecting to Google Drive…"}
+            logger.info("Sync started.")
 
-        downloaded, skipped = sync_drive_files()
-        logger.info("Downloaded %d file(s), skipped %d.", len(downloaded), len(skipped))
+            downloaded, skipped = sync_drive_files()
+            logger.info("Downloaded %d file(s), skipped %d.", len(downloaded), len(skipped))
 
-        sync_status["message"] = f"Downloaded {len(downloaded)} file(s). Processing…"
-        chunks_data = process_documents(settings.DOWNLOAD_DIR)
+            sync_status = {**sync_status,
+                           "message": f"Step 2/4 — Downloaded {len(downloaded)} file(s). Extracting text…"}
+            chunks_data = process_documents(settings.DOWNLOAD_DIR)
 
-        sync_status["message"] = "Generating embeddings…"
-        if chunks_data:
-            model      = get_model()
-            embeddings = create_embeddings(chunks_data, model)
-            faiss_index = build_faiss_index(embeddings)
-            # ── Persist to disk so restarts don't wipe the index ──────────────
-            save_index(faiss_index, chunks_data, settings.DATA_DIR)
+            sync_status = {**sync_status,
+                           "message": f"Step 3/4 — Generating embeddings for {len(chunks_data)} chunks…"}
+            if chunks_data:
+                model       = get_model()
+                embeddings  = create_embeddings(chunks_data, model)
+                faiss_index = build_faiss_index(embeddings)
+                sync_status = {**sync_status, "message": "Step 4/4 — Saving index to disk…"}
+                save_index(faiss_index, chunks_data, settings.DATA_DIR)
 
-        sync_status = {
-            "status":        "ready",
-            "message":       f"Sync complete. {len(downloaded)} new, {len(skipped)} unchanged.",
-            "new_files":     downloaded,
-            "skipped_files": skipped,
-            "total_files":   len(downloaded) + len(skipped),
-            "chunks":        len(chunks_data),
-        }
-        logger.info("Sync complete. %d chunks indexed.", len(chunks_data))
+            sync_status = {
+                "status":        "ready",
+                "message":       f"Sync complete. {len(downloaded)} new, {len(skipped)} unchanged.",
+                "new_files":     downloaded,
+                "skipped_files": skipped,
+                "total_files":   len(downloaded) + len(skipped),
+                "chunks":        len(chunks_data),
+            }
+            logger.info("Sync complete. %d chunks indexed.", len(chunks_data))
 
-    except Exception as exc:
-        logger.exception("Sync failed: %s", exc)
-        sync_status = {**sync_status, "status": "error", "message": str(exc)}
+        except Exception as exc:
+            logger.exception("Sync failed: %s", exc)
+            sync_status = {**sync_status, "status": "error", "message": str(exc)}
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -171,12 +197,13 @@ def verify_key(_: None = Depends(require_auth)):
 
 @app.post("/sync-drive", summary="Trigger Google Drive sync",
           dependencies=[Depends(require_auth)])
-def sync_drive(background_tasks: BackgroundTasks):
+def sync_drive():
     global sync_status
-    if sync_status.get("status") == "syncing":
+    if _sync_lock.locked():
         return {"message": "Sync already in progress. Check GET /sync-status."}
     sync_status = {**sync_status, "status": "syncing", "message": "Sync queued…"}
-    background_tasks.add_task(run_sync)
+    t = threading.Thread(target=run_sync, daemon=True)
+    t.start()
     return {"message": "Sync started in background. Poll GET /sync-status for progress."}
 
 

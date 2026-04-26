@@ -451,10 +451,19 @@ async function syncDrive() {
 }
 
 function pollSyncStatus() {
+  let errorCount = 0;
   pollTimer = setInterval(async () => {
     try {
       const res = await fetch(`${API}/sync-status`);
       const data = await res.json();
+      errorCount = 0; // reset on success
+
+      // Update the processing bubble message live
+      const msgEl = $('sync-progress-msg');
+      if (msgEl && data.message) {
+        const p = msgEl.querySelector('p');
+        if (p) p.textContent = data.message;
+      }
 
       if (data.status === 'ready') {
         clearInterval(pollTimer);
@@ -487,9 +496,14 @@ function pollSyncStatus() {
         setBadge('⏳ Indexing…', 'bg-amber-100 text-amber-700');
       }
     } catch(e) {
-      clearInterval(pollTimer);
-      $('sync-progress-msg')?.remove();
-      resetSyncBtn();
+      errorCount++;
+      // Only stop after 5 consecutive network failures (transient issues are fine)
+      if (errorCount >= 5) {
+        clearInterval(pollTimer);
+        $('sync-progress-msg')?.remove();
+        appendError('Lost connection to server. Please refresh and try again.');
+        resetSyncBtn();
+      }
     }
   }, 2000);
 }

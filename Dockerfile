@@ -23,6 +23,8 @@ ENV HF_HUB_OFFLINE=1
 COPY . .
 
 # ── Ensure storage directories and executable startup script ─────────────────
+# credentials.json is baked in via `COPY . .` above; also supports runtime
+# injection via GOOGLE_CREDENTIALS_JSON env var (see startup.sh)
 RUN mkdir -p downloads data && chmod +x startup.sh
 
 EXPOSE 8000
