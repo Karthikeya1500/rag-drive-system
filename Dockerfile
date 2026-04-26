@@ -15,9 +15,10 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ── Pre-download embedding model (baked into image = instant cold start) ──────
+ENV HF_HOME=/app/.cache/huggingface
 ARG EMBEDDING_MODEL=all-MiniLM-L6-v2
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('${EMBEDDING_MODEL}')"
-
+ENV HF_HUB_OFFLINE=1
 # ── Copy application source ───────────────────────────────────────────────────
 COPY . .
 
