@@ -1,57 +1,41 @@
 """
 search/search.py
-Semantic search over the FAISS index with optional metadata filtering.
+FAISS semantic search using Google text-embedding-004 query embeddings.
 """
 
+import logging
 import numpy as np
+
+logger = logging.getLogger("documind.search")
 
 
 def search_chunks(
     query: str,
     index,
     chunks: list[dict],
-    model,
     top_k: int = 5,
     file_filter: str | None = None,
 ) -> list[dict]:
     """
-    Retrieve the most relevant chunks for *query*.
-
-    Args:
-        query:       Natural-language question.
-        index:       FAISS IndexFlatL2 object.
-        chunks:      List of chunk dicts (text + metadata).
-        model:       SentenceTransformer model for encoding the query.
-        top_k:       Number of results to return.
-        file_filter: Optional substring; restrict results to chunks whose
-                     file_name contains this string (case-insensitive).
-
-    Returns:
-        Ordered list of chunk dicts (most relevant first).
+    Embed the query and retrieve top-K most similar chunks from FAISS.
+    Optionally filter by file name.
     """
-    if not chunks or index is None:
-        return []
+    from embedding.vector_store import embed_query
 
-    query_vec = model.encode([query])
-    query_vec = np.array(query_vec, dtype=np.float32)
-
-    # Over-fetch when filtering so we still get top_k after dropping non-matches
-    fetch_k = min(top_k * 6 if file_filter else top_k, len(chunks))
-    distances, indices = index.search(query_vec, fetch_k)
+    query_vec = embed_query(query)
+    k = min(top_k * 3, len(chunks))   # over-fetch to allow for filtering
+    distances, indices = index.search(query_vec, k)
 
     results: list[dict] = []
-    for idx in indices[0]:
-        if idx < 0 or idx >= len(chunks):
+    for dist, idx in zip(distances[0], indices[0]):
+        if idx < 0:
             continue
-
         chunk = chunks[idx]
-
-        if file_filter:
-            if file_filter.lower() not in chunk["metadata"]["file_name"].lower():
-                continue
-
-        results.append(chunk)
+        if file_filter and chunk["metadata"]["file_name"] != file_filter:
+            continue
+        results.append({**chunk, "score": float(dist)})
         if len(results) >= top_k:
             break
 
+    logger.info("Search '%s' → %d results", query[:50], len(results))
     return results

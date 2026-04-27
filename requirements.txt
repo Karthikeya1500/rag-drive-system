@@ -8,14 +8,19 @@ aiofiles
 # Environment
 python-dotenv
 
-# Google Drive
+# Google Drive + Embeddings
 google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
+google-genai
 
 # Document parsing
 pypdf
 python-docx
+
+# Vector search
+faiss-cpu
+numpy
 
 # LLM
 groq
