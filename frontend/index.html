@@ -136,7 +136,7 @@
 
         <!-- How to add your own documents -->
         <div class="mt-4 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 px-4 py-4">
-          <p class="text-[13px] font-bold text-blue-900 mb-3">📂 How to add your own documents</p>
+          <p class="text-[13px] font-bold text-blue-900 mb-3">How to add your own documents</p>
 
           <!-- Step 1 -->
           <div class="flex gap-3 mb-3">
@@ -154,7 +154,7 @@
               <p class="text-[12px] font-semibold text-blue-900">Share it with our bot (Viewer access)</p>
               <div class="mt-1.5 flex items-center gap-2">
                 <code class="text-[10px] bg-white border border-blue-200 text-blue-900 rounded-lg px-2 py-1 break-all flex-1">rag-drive-bot@rag-drive-system-494405.iam.gserviceaccount.com</code>
-                <button onclick="navigator.clipboard.writeText('rag-drive-bot@rag-drive-system-494405.iam.gserviceaccount.com').then(()=>{this.textContent='✓ Copied';setTimeout(()=>this.textContent='Copy',2000)})"
+                <button onclick="navigator.clipboard.writeText('rag-drive-bot@rag-drive-system-494405.iam.gserviceaccount.com').then(()=>{this.textContent='Copied';setTimeout(()=>this.textContent='Copy',2000)})"
                   class="shrink-0 text-[11px] bg-blue-600 text-white px-2.5 py-1 rounded-lg hover:bg-blue-700 transition-all font-medium">Copy</button>
               </div>
             </div>
@@ -165,7 +165,7 @@
             <span class="shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white text-[11px] font-bold flex items-center justify-center">3</span>
             <div>
               <p class="text-[12px] font-semibold text-blue-900">Click <span class="text-primary">Sync Drive</span> above</p>
-              <p class="text-[11px] text-blue-700">Your document will be indexed in ~20 seconds and ready to query ✅</p>
+              <p class="text-[11px] text-blue-700">Your document will be indexed in ~20 seconds and ready to query.</p>
             </div>
           </div>
         </div>
@@ -481,7 +481,7 @@ async function syncDrive() {
     progressEl.id = 'sync-progress-msg';
     pollSyncStatus();
   } catch(e) {
-    setBadge('✗ Failed', 'bg-red-100 text-red-600');
+    setBadge('Failed', 'bg-red-100 text-red-600');
     appendError('Could not reach the server. Make sure uvicorn is running.');
     resetSyncBtn();
   }
@@ -506,7 +506,7 @@ function pollSyncStatus() {
         clearInterval(pollTimer);
         isSynced = true;
         syncedFiles = [...(data.new_files || []), ...(data.skipped_files || [])];
-        setBadge(`✓ ${data.total_files} docs`, 'bg-green-100 text-green-700');
+        setBadge(`${data.total_files} docs`, 'bg-green-100 text-green-700');
         buildFilterBar(syncedFiles);
         resetSyncBtn();
 
@@ -516,21 +516,21 @@ function pollSyncStatus() {
         const allFiles = syncedFiles.map(f => `<span class="font-semibold text-primary">${escHtml(f)}</span>`).join(', ');
         appendInfo(`
           <p class="text-[16px] text-on-surface leading-relaxed">
-            ✅ <strong>Sync complete!</strong> ${data.new_files?.length || 0} new file(s) downloaded,
+            <strong>Sync complete!</strong> ${data.new_files?.length || 0} new file(s) downloaded,
             ${data.skipped_files?.length || 0} unchanged.
             <strong>${data.chunks}</strong> text chunks indexed and ready.
           </p>
           ${syncedFiles.length ? `<p class="mt-2 text-[13px] text-on-surface-variant">Documents: ${allFiles}</p>` : ''}
-          <p class="mt-3 text-[14px] text-primary font-medium">You can now ask questions! 👇</p>`);
+          <p class="mt-3 text-[14px] text-primary font-medium">You can now ask questions.</p>`);
 
       } else if (data.status === 'error') {
         clearInterval(pollTimer);
-        setBadge('✗ Error', 'bg-red-100 text-red-600');
+        setBadge('Error', 'bg-red-100 text-red-600');
         $('sync-progress-msg')?.remove();
         appendError(`Sync failed: ${data.message}`);
         resetSyncBtn();
       } else {
-        setBadge('⏳ Indexing…', 'bg-amber-100 text-amber-700');
+        setBadge('Indexing...', 'bg-amber-100 text-amber-700');
       }
     } catch(e) {
       errorCount++;
