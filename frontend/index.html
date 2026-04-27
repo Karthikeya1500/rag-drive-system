@@ -131,9 +131,23 @@
       <div class="bg-white border-l-4 border-primary rounded-3xl rounded-tl-none px-5 py-4 shadow-sm ring-1 ring-black/5 max-w-[88%]">
         <p class="text-[16px] text-on-surface leading-relaxed">
           Hello! I'm your <span class="font-semibold text-primary">DocuMind AI</span> assistant.
-          Click <span class="font-semibold">Sync Drive</span> to load your Google Drive documents,
-          then ask me anything about them.
+          I can answer questions about any documents in the connected Google Drive.
         </p>
+
+        <!-- How to add your own documents -->
+        <div class="mt-4 rounded-2xl bg-blue-50 border border-blue-200 px-4 py-3">
+          <p class="text-[13px] font-semibold text-blue-800 mb-1">📂 Want to add your own documents?</p>
+          <p class="text-[12px] text-blue-700 leading-relaxed">
+            Share your PDF / Google Doc / DOCX / TXT file in Google Drive with Viewer access to:
+          </p>
+          <div class="mt-2 flex items-center gap-2">
+            <code class="text-[11px] bg-white border border-blue-200 text-blue-900 rounded-lg px-2 py-1 break-all select-all">rag-drive-bot@rag-drive-system-494405.iam.gserviceaccount.com</code>
+            <button onclick="navigator.clipboard.writeText('rag-drive-bot@rag-drive-system-494405.iam.gserviceaccount.com').then(()=>{this.textContent='✓';setTimeout(()=>this.textContent='Copy',1500)})"
+              class="shrink-0 text-[11px] bg-blue-600 text-white px-2 py-1 rounded-lg hover:bg-blue-700 transition-all">Copy</button>
+          </div>
+          <p class="text-[11px] text-blue-600 mt-2">Then click <strong>Sync Drive</strong> above — your file will be indexed in seconds. ✅</p>
+        </div>
+
         <div class="mt-4 flex flex-wrap gap-2">
           <button onclick="quickAsk('Summarize the key findings from all documents')"
             class="px-3 py-1.5 rounded-full border border-outline-variant bg-surface-container-low text-[12px] text-primary hover:bg-primary-container hover:text-on-primary-container transition-all flex items-center gap-1.5">
