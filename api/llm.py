@@ -32,21 +32,23 @@ def generate_answer(query: str, context_chunks: list[dict]) -> str:
 
     context = "\n\n---\n\n".join(parts)
 
-    prompt = f"""You are a helpful document assistant. Answer the user's question based ONLY \
-on the document excerpts provided below.
+    prompt = f"""You are DocuMind AI, a helpful document assistant. The user has uploaded their documents and wants to ask questions about them.
 
-Rules:
-- Be clear and concise.
-- Cite the source document name when referencing a fact (e.g. "According to report.pdf…").
-- If the excerpts do not contain enough information, say: \
-"I couldn't find sufficient information about this in the provided documents."
-- Do NOT fabricate facts outside the provided context.
+Below are the most relevant excerpts retrieved from the user's documents:
 
 --- Document Excerpts ---
 {context}
 --- End of Excerpts ---
 
 Question: {query}
+
+Instructions:
+1. If the excerpts directly answer the question, answer using ONLY the document content and cite sources (e.g. "According to 4.Quadratic Equations 2020.pdf...").
+2. If the excerpts contain PRACTICE PROBLEMS or EXERCISES on the topic (but not a formal definition), do the following:
+   - First, provide a clear explanation of the concept from your knowledge.
+   - Then say: "Your document '{{filename}}' contains practice problems on this topic:" and list 1-2 example problems from the excerpts.
+3. If the excerpts are completely unrelated to the question, say: "I couldn't find information about this in your uploaded documents."
+4. Always be helpful, clear, and concise.
 
 Answer:"""
 
