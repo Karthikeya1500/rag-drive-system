@@ -135,18 +135,41 @@
         </p>
 
         <!-- How to add your own documents -->
-        <div class="mt-4 rounded-2xl bg-blue-50 border border-blue-200 px-4 py-3">
-          <p class="text-[13px] font-semibold text-blue-800 mb-1">📂 Want to add your own documents?</p>
-          <p class="text-[12px] text-blue-700 leading-relaxed">
-            Share your PDF / Google Doc / DOCX / TXT file in Google Drive with Viewer access to:
-          </p>
-          <div class="mt-2 flex items-center gap-2">
-            <code class="text-[11px] bg-white border border-blue-200 text-blue-900 rounded-lg px-2 py-1 break-all select-all">rag-drive-bot@rag-drive-system-494405.iam.gserviceaccount.com</code>
-            <button onclick="navigator.clipboard.writeText('rag-drive-bot@rag-drive-system-494405.iam.gserviceaccount.com').then(()=>{this.textContent='✓';setTimeout(()=>this.textContent='Copy',1500)})"
-              class="shrink-0 text-[11px] bg-blue-600 text-white px-2 py-1 rounded-lg hover:bg-blue-700 transition-all">Copy</button>
+        <div class="mt-4 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 px-4 py-4">
+          <p class="text-[13px] font-bold text-blue-900 mb-3">📂 How to add your own documents</p>
+
+          <!-- Step 1 -->
+          <div class="flex gap-3 mb-3">
+            <span class="shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white text-[11px] font-bold flex items-center justify-center">1</span>
+            <div>
+              <p class="text-[12px] font-semibold text-blue-900">Upload your file to Google Drive</p>
+              <p class="text-[11px] text-blue-700">PDF, Google Doc, DOCX, or TXT — any size</p>
+            </div>
           </div>
-          <p class="text-[11px] text-blue-600 mt-2">Then click <strong>Sync Drive</strong> above — your file will be indexed in seconds. ✅</p>
+
+          <!-- Step 2 -->
+          <div class="flex gap-3 mb-3">
+            <span class="shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white text-[11px] font-bold flex items-center justify-center">2</span>
+            <div class="w-full">
+              <p class="text-[12px] font-semibold text-blue-900">Share it with our bot (Viewer access)</p>
+              <div class="mt-1.5 flex items-center gap-2">
+                <code class="text-[10px] bg-white border border-blue-200 text-blue-900 rounded-lg px-2 py-1 break-all flex-1">rag-drive-bot@rag-drive-system-494405.iam.gserviceaccount.com</code>
+                <button onclick="navigator.clipboard.writeText('rag-drive-bot@rag-drive-system-494405.iam.gserviceaccount.com').then(()=>{this.textContent='✓ Copied';setTimeout(()=>this.textContent='Copy',2000)})"
+                  class="shrink-0 text-[11px] bg-blue-600 text-white px-2.5 py-1 rounded-lg hover:bg-blue-700 transition-all font-medium">Copy</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="flex gap-3">
+            <span class="shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white text-[11px] font-bold flex items-center justify-center">3</span>
+            <div>
+              <p class="text-[12px] font-semibold text-blue-900">Click <span class="text-primary">Sync Drive</span> above</p>
+              <p class="text-[11px] text-blue-700">Your document will be indexed in ~20 seconds and ready to query ✅</p>
+            </div>
+          </div>
         </div>
+
 
         <div class="mt-4 flex flex-wrap gap-2">
           <button onclick="quickAsk('Summarize the key findings from all documents')"
